@@ -112,7 +112,7 @@ CMAKE_PROJECT_DESCRIPTION:STATIC=
 CMAKE_PROJECT_HOMEPAGE_URL:STATIC=
 
 //Value Computed by CMake
-CMAKE_PROJECT_NAME:STATIC=RadarSimulation
+CMAKE_PROJECT_NAME:STATIC=RadarSim
 
 //RC compiler
 CMAKE_RC_COMPILER:FILEPATH=rc
@@ -193,6 +193,15 @@ Project_IS_TOP_LEVEL:STATIC=ON
 
 //Value Computed by CMake
 Project_SOURCE_DIR:STATIC=C:/Users/cocch/Desktop/radar proj
+
+//Value Computed by CMake
+RadarSim_BINARY_DIR:STATIC=C:/Users/cocch/Desktop/radar proj/build
+
+//Value Computed by CMake
+RadarSim_IS_TOP_LEVEL:STATIC=ON
+
+//Value Computed by CMake
+RadarSim_SOURCE_DIR:STATIC=C:/Users/cocch/Desktop/radar proj
 
 //Value Computed by CMake
 RadarSimulation_BINARY_DIR:STATIC=C:/Users/cocch/Desktop/radar proj/build

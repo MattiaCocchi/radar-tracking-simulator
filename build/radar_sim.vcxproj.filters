@@ -10,6 +10,9 @@
     <ClCompile Include="C:\Users\cocch\Desktop\radar proj\core\Radar.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Users\cocch\Desktop\radar proj\core\KalmanFilter1D.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="C:\Users\cocch\Desktop\radar proj\core\Tracker.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

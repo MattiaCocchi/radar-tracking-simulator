@@ -1,4 +1,5 @@
 C:\Users\cocch\Desktop\radar proj\main.cpp;C:\Users\cocch\Desktop\radar proj\build\radar_sim.dir\Debug\main.obj
 C:\Users\cocch\Desktop\radar proj\core\Entity.cpp;C:\Users\cocch\Desktop\radar proj\build\radar_sim.dir\Debug\Entity.obj
 C:\Users\cocch\Desktop\radar proj\core\Radar.cpp;C:\Users\cocch\Desktop\radar proj\build\radar_sim.dir\Debug\Radar.obj
+C:\Users\cocch\Desktop\radar proj\core\KalmanFilter1D.cpp;C:\Users\cocch\Desktop\radar proj\build\radar_sim.dir\Debug\KalmanFilter1D.obj
 C:\Users\cocch\Desktop\radar proj\core\Tracker.cpp;C:\Users\cocch\Desktop\radar proj\build\radar_sim.dir\Debug\Tracker.obj

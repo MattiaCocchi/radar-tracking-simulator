@@ -46,4 +46,4 @@ private:
     std::ofstream file_;
 };
 
-#endif // LOGGER_H
+#endif 

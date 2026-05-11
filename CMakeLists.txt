@@ -1,20 +1,29 @@
-cmake_minimum_required(VERSION 3.10)
-project(RadarSimulation)
+cmake_minimum_required(VERSION 3.16)
+project(RadarSim CXX)
 
-# Impostiamo lo standard C++ (il 17 è perfetto per quello che facciamo)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Diciamo a CMake dove trovare i file .h (la cartella core)
-include_directories(core)
+# ── Warnings ──────────────────────────────────────────────────────────────────
+if(MSVC)
+    add_compile_options(/W4)
+else()
+    add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
 
-# Elenchiamo tutti i file .cpp
-set(SOURCES 
-    main.cpp 
-    core/Entity.cpp 
-    core/Radar.cpp 
+# ── Sources ───────────────────────────────────────────────────────────────────
+set(CORE_SOURCES
+    core/Entity.cpp
+    core/Radar.cpp
+    core/KalmanFilter1D.cpp
     core/Tracker.cpp
 )
 
-# Creiamo l'eseguibile
-add_executable(radar_sim ${SOURCES})
+add_executable(radar_sim main.cpp ${CORE_SOURCES})
+target_include_directories(radar_sim PRIVATE ${CMAKE_SOURCE_DIR})
+
+# ── Build instructions ────────────────────────────────────────────────────────
+# mkdir build && cd build
+# cmake ..
+# cmake --build .
+# ./radar_sim
