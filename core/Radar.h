@@ -1,17 +1,22 @@
 #ifndef RADAR_H
 #define RADAR_H
 
-
-#include <iostream>
 #include <random>
+#include <utility>
 
-class Radar{
-    private:
-    std::mt19937 m_gen;
-    std::normal_distribution<double> n_dist;
-    public:
+class Radar {
+public:
+    explicit Radar(double sigma);
+
+    // Returns a noisy (x, y) measurement
     std::pair<double, double> detect(double trueX, double trueY);
-    Radar(double sigma);
+
+    double getSigma() const { return m_sigma; }
+
+private:
+    double                       m_sigma;
+    std::mt19937                 m_gen;
+    std::normal_distribution<double> n_dist;
 };
 
-#endif
+#endif // RADAR_H
