@@ -10,5 +10,5 @@ class Entity{
     public:
     Entity(double x, double y, double vx, double vy);
     void update(double dt);
-    State getState();
+    State getState() const;
 };
