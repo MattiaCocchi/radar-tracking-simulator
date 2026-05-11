@@ -1,3 +1,7 @@
+#ifndef TRACKER_H
+#define TRACKER_H
+
+
 #include <iostream>
 
 #include "Entity.h"
@@ -12,3 +16,5 @@ class Tracker{
     bool firstDate;
     double alpha;
 };
+
+#endif

@@ -1,3 +1,7 @@
+#ifndef RADAR_H
+#define RADAR_H
+
+
 #include <iostream>
 #include <random>
 
@@ -9,3 +13,5 @@ class Radar{
     std::pair<double, double> detect(double trueX, double trueY);
     Radar(double sigma);
 };
+
+#endif

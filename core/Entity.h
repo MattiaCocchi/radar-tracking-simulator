@@ -1,3 +1,6 @@
+#ifndef ENTITY_H
+#define ENTITY_H
+
 #include <iostream>
 
 struct State{
@@ -12,3 +15,5 @@ class Entity{
     void update(double dt);
     State getState() const;
 };
+
+#endif
