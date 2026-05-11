@@ -8,7 +8,6 @@ class Radar {
 public:
     explicit Radar(double sigma);
 
-    // Returns a noisy (x, y) measurement
     std::pair<double, double> detect(double trueX, double trueY);
 
     double getSigma() const { return m_sigma; }
