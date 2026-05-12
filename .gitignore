@@ -1,7 +1,14 @@
 build/
-.vs/
+bin/
 out/
-*.exe
-*.obj
+
+.vs/
+*.user
+*.suo
 *.pdb
+
+# Python
+__pycache__/
+*.pyc
+
 *.csv
