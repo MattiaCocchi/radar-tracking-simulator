@@ -339,6 +339,24 @@ ekf_friction_estimator/
 
 ---
 
+## 📊 Simulation Results & Validation
+
+The EKF estimator was stress-tested under three different vertical loads ($F_z$) to validate its robustness and the "Observability-driven Freeze" logic.
+
+### Load Sensitivity Analysis
+
+| Light Load (2000N) | Standard Load (3500N) | Heavy Load (5000N) |
+|:---:|:---:|:---:|
+| ![2000N](results/plot_2000N.png) | ![3500N](results/plot_3500N.png) | ![5000N](results/plot_5000N.png) |
+| **Reactive:** Fast tracking but higher sensitivity to wheel oscillations. | **Optimal:** Best balance between noise rejection and friction estimation. | **Conservative:** High stability, the filter prioritizes safety over re-acquisition. |
+
+### Key Observations
+1. **Ice Transition (t=3.0s):** In all scenarios, the `[FREEZE]` mode correctly engaged when the observability index dropped, preventing the state $\mu$ from diverging during wheel lock-up.
+2. **Confidence Decay:** Notice the slight drop in confidence during prolonged freeze periods; this represents the EKF correctly modeling the growth of uncertainty ($P$ matrix) when sensor data is unavailable.
+3. **Thermal Influence:** The Pacejka stiffness $B(T)$ was dynamically adjusted as the tire temperature rose to 95°C during braking, ensuring the Jacobian remained accurate.
+
+
+
 ## References
 
 1. Pacejka, H.B. — *Tyre and Vehicle Dynamics*, 3rd Ed., Butterworth-Heinemann, 2012. §4.3
