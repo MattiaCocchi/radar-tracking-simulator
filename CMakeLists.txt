@@ -1,29 +1,33 @@
 cmake_minimum_required(VERSION 3.16)
-project(RadarSim CXX)
+project(FrictionEstimator CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# ── Warnings ──────────────────────────────────────────────────────────────────
+# ── Warnings per un codice professionale ──────────────────────────────────────
 if(MSVC)
     add_compile_options(/W4)
 else()
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-# ── Sources ───────────────────────────────────────────────────────────────────
+# ── Nuovi Sorgenti Core ───────────────────────────────────────────────────────
+# Nota: Abbiamo sostituito i vecchi file del radar con il nuovo motore fisico
 set(CORE_SOURCES
-    core/Entity.cpp
-    core/Radar.cpp
-    core/KalmanFilter1D.cpp
-    core/Tracker.cpp
+    core/ExtendedKalmanFilter.cpp
+    core/FrictionSimulator.cpp
+    # WheelModel.h e TelemetryLogger.h sono header-only, 
+    # quindi non serve elencarli qui tra i .cpp
 )
 
-add_executable(radar_sim main.cpp ${CORE_SOURCES})
-target_include_directories(radar_sim PRIVATE ${CMAKE_SOURCE_DIR})
+# ── Eseguibile ────────────────────────────────────────────────────────────────
+add_executable(friction_estimator main.cpp ${CORE_SOURCES})
 
-# ── Build instructions ────────────────────────────────────────────────────────
+# Questo permette al compilatore di trovare gli header dentro la cartella /core
+target_include_directories(friction_estimator PRIVATE ${CMAKE_SOURCE_DIR})
+
+# ── Istruzioni per la Build ───────────────────────────────────────────────────
 # mkdir build && cd build
 # cmake ..
 # cmake --build .
-# ./radar_sim
+# ./friction_estimator
