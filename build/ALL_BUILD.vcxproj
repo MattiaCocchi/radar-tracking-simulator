@@ -174,9 +174,9 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </ProjectReference>
-    <ProjectReference Include="C:\Users\cocch\Desktop\radar proj\build\radar_sim.vcxproj">
-      <Project>{2B1C1286-C167-3BA8-B5C5-EA340A92440E}</Project>
-      <Name>radar_sim</Name>
+    <ProjectReference Include="C:\Users\cocch\Desktop\radar proj\build\friction_estimator.vcxproj">
+      <Project>{414229F1-E549-338C-81F1-DB5E933E3142}</Project>
+      <Name>friction_estimator</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
