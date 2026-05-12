@@ -3,31 +3,20 @@
 #include "WheelModel.h"
 #include <cmath>
 #include <optional>
-
-// ╔══════════════════════════════════════════════════════════════════════════╗
-// ║  ExtendedKalmanFilter — State Estimator                           v2.0  ║
-// ║                                                                          ║
-// ║  State vector:  x = [ ω,  μ ]ᵀ                                          ║
-// ║    ω  : wheel angular velocity   [rad/s]  — estimated from ABS sensor   ║
-// ║    μ  : tire-road friction coeff [−]      — the Virtual Sensor output   ║
-// ║                                                                          ║
-// ║  Process model (nonlinear, with rolling resistance):                     ║
-// ║    ω⁺ = ω + dt · (τ − (Fx(ω,μ,T) + F_rr(ω)) · R) / I                 ║
-// ║    μ⁺ = μ                              ← random-walk (slowly varying)  ║
-// ║                                                                          ║
-// ║  Measurement model (linear):                                             ║
-// ║    z  = H · x + v,   H = [1, 0]       ← ABS reads ω directly          ║
-// ║                                                                          ║
-// ║  v2 additions:                                                           ║
-// ║   ① Lock-up freeze:  μ update inhibited when observability is low.      ║
-// ║     Triggered by: low |κ|, ω ≈ 0, or |κ| exceeding saturation limit.  ║
-// ║     During freeze: x[1] held, P[1][*] held (no spurious growth).        ║
-// ║   ② Confidence score: [0,1] metric derived from P trace + observability ║
-// ║   ③ Tyre temperature input forwarded to WheelModel Jacobians            ║
-// ║                                                                          ║
-// ║  ⚠  Zero heap allocation: all matrices are plain double[2][2] on stack. ║
-// ╚══════════════════════════════════════════════════════════════════════════╝
-
+/**
+ * ExtendedKalmanFilter - State Estimator v2.0
+ * * State vector:  x = [omega, mu]
+ * - omega : wheel angular velocity [rad/s] (from ABS)
+ * - mu    : tire-road friction coefficient [-] (Virtual Sensor)
+ * * Process model:
+ * omega+ = omega + dt * (torque - (Fx + F_rr) * R) / I
+ * mu+    = mu (random-walk)
+ * * Safety Features:
+ * - Lock-up freeze: Inhibits mu update when observability is low.
+ * - Confidence score: [0..1] metric based on P trace.
+ * - Thermal correction: Uses tire temperature for Pacejka Jacobians.
+ * * Performance: Zero heap allocation (stack-only matrices).
+ */
 // ── EKF operating mode reported in diagnostics ───────────────────────────────
 enum class EkfMode : uint8_t {
     Normal     = 0,   ///< Both ω and μ are being updated
