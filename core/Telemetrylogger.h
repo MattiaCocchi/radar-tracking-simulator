@@ -5,16 +5,13 @@
 #include <array>
 #include <cstddef>
 #include <stdexcept>
-
-// ╔══════════════════════════════════════════════════════════════════════════╗
-// ║  TelemetryLogger — High-frequency CSV logger                            ║
-// ║                                                                          ║
-// ║  Design goals:                                                           ║
-// ║   • No dynamic allocation in write() — uses a fixed ring buffer         ║
-// ║   • Bulk file I/O on flush() to avoid blocking the RT loop              ║
-// ║   • Ready for mmap / UDP socket replacement on embedded targets         ║
-// ╚══════════════════════════════════════════════════════════════════════════╝
-
+/**
+ * TelemetryLogger - High-frequency CSV logging system
+ * * Optimized for Real-Time (RT) constraints:
+ * 1. Zero Dynamic Allocation: write() uses a pre-allocated fixed buffer.
+ * 2. Non-blocking I/o: Bulk file writes on flush() to minimize RT loop jitter.
+ * 3. Scalability: Design compatible with mmap or UDP offloading for embedded targets.
+ */
 struct TelemetryRow {
     double t_ms;           ///< Simulation timestamp          [ms]
     double true_omega;     ///< Ground truth wheel speed       [rad/s]

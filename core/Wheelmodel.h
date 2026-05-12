@@ -2,26 +2,19 @@
 
 #include <cmath>
 #include <algorithm>
-
-// ╔══════════════════════════════════════════════════════════════════════════╗
-// ║  WheelModel — Physical Plant (Ground Truth Dynamics)              v2.0  ║
-// ║                                                                          ║
-// ║  Newton-Euler moment equation (with rolling resistance):                 ║
-// ║    I · dω/dt = τ  −  Fx(κ, μ, T) · R_eff  −  F_rr(ω) · R_eff         ║
-// ║                                                                          ║
-// ║  Tire force Fx — Pacejka Magic Formula with thermal B factor:            ║
-// ║    Fx = μ · Fz · sin( C · arctan( B(T) · κ ) )                         ║
-// ║    B(T) = B₀ · (1 + α · (T − T_ref))                                   ║
-// ║                                                                          ║
-// ║  Rolling resistance (v2):                                                ║
-// ║    F_rr = Crr · Fz · tanh(ω/ε)   [smooth sign approximation]           ║
-// ║                                                                          ║
-// ║  observabilityIndex(): quantifies μ-observability at current κ          ║
-// ║    → drives EKF freeze logic in ExtendedKalmanFilter                    ║
-// ║                                                                          ║
-// ║  Reference: Pacejka H.B., "Tyre and Vehicle Dynamics", 3rd Ed., §4.3   ║
-// ╚══════════════════════════════════════════════════════════════════════════╝
-
+/**
+ * WheelModel - Physical Dynamics & Force Modeling v2.0
+ * * * Moment Balance (Newton-Euler):
+ * I * d(omega)/dt = torque - (Fx(kappa, mu, T) + F_rr(omega)) * R_eff
+ * * * Longitudinal Force (Pacejka Magic Formula):
+ * Fx = mu * Fz * sin( C * arctan( B(T) * kappa ) )
+ * where B(T) = B0 * (1 + alpha * (T - T_ref)) [Thermal correction]
+ * * * Rolling Resistance:
+ * F_rr = Crr * Fz * tanh(omega/epsilon) [Continuous approximation]
+ * * * Observability:
+ * Provides the Jacobian-based mu-observability index for EKF freeze logic.
+ * * Reference: Pacejka H.B., "Tyre and Vehicle Dynamics", 3rd Ed.
+ */
 struct WheelParams {
     double I_wheel;       ///< Moment of inertia              [kg·m²]
     double R_eff;         ///< Effective rolling radius        [m]

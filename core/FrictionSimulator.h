@@ -4,18 +4,16 @@
 #include <random>
 #include <vector>
 #include <string>
-
-// ╔══════════════════════════════════════════════════════════════════════════╗
-// ║  FrictionSimulator — Ground Truth Plant & Sensor Emulator               ║
-// ║                                                                          ║
-// ║  Simulates the "real world" side of the V-model:                         ║
-// ║    1. Integrates true wheel dynamics (RK4) with true μ(t)               ║
-// ║    2. Adds Gaussian noise to ω → synthetic ABS sensor reading           ║
-// ║    3. Manages surface-change scenarios (time-tagged μ transitions)       ║
-// ║                                                                          ║
-// ║  This class is NEVER seen by the EKF — it represents physical reality.  ║
-// ╚══════════════════════════════════════════════════════════════════════════╝
-
+/**
+ * FrictionSimulator - Ground Truth Plant & Sensor Emulator
+ * * This class represents physical reality within the V-model framework.
+ * It is logically isolated from the EKF to ensure validation integrity.
+ * * Main Responsibilities:
+ * 1. Physics Engine: Integrates wheel dynamics using RK4 with ground-truth mu(t).
+ * 2. Sensor Modeling: Adds Gaussian noise to omega to simulate ABS sensor error.
+ * 3. Scenario Management: Handles time-tagged surface transitions (e.g., Dry -> Ice).
+ * * Note: The EKF never has access to the internal states of this class.
+ */
 // ── Scenario event: surface changes at a given simulation time ────────────────
 struct SurfaceEvent {
     double time_s;   ///< Simulation time at which the surface changes [s]
