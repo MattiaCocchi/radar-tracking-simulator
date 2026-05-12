@@ -18,7 +18,7 @@ namespace Config {
     // Wheel physical parameters
     constexpr double I_WHEEL   = 1.8;     // [kg·m²]
     constexpr double R_EFF     = 0.315;   // [m]
-    constexpr double FZ        = 3500.0;  // Normal load [N]
+    constexpr double FZ        = 5000.0;  // Normal load [N]
 
     // Vehicle dynamics
     constexpr double VX        = 25.0;    // Constant speed for this test [m/s]
@@ -40,12 +40,12 @@ namespace Config {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Dynamic Temperature Profile: simulate tire warming up during friction
+//  Dynamic Temperature Profile
 // ─────────────────────────────────────────────────────────────────────────────
 static double getTireTemperature(double t_s, double tau) noexcept {
-    // Very simple model: if braking, temp rises towards T_PEAK
     if (tau < -100.0) {
-        return Config::T_AMBIENT + (Config::T_PEAK - Config::T_AMBIENT) * (1.0 - std::exp(-0.5 * t_s));
+        return Config::T_AMBIENT + (Config::T_PEAK - Config::T_AMBIENT)
+               * (1.0 - std::exp(-0.5 * t_s));
     }
     return Config::T_AMBIENT;
 }
@@ -76,8 +76,7 @@ int main() {
     ExtendedKalmanFilter ekf(model, Q_OMEGA, Q_MU, SIGMA_ABS);
     ekf.init(VX / R_EFF, 0.8); // Start with a guess of 0.8 mu
 
-    // 4. Logger - Now with extra diagnostic columns
-    // Columns: t, w_true, w_meas, w_ekf, mu_true, mu_ekf, sigma, confidence, mode, tau, temp
+    // 4. Logger
     TelemetryLogger<4096> logger("friction_v2_results.csv");
 
     std::cout << std::fixed << std::setprecision(2);
@@ -101,7 +100,6 @@ int main() {
         const double T_c = getTireTemperature(t_s, tau);
 
         // --- STEP 1: Physics ---
-        // Note: In a real vehicle, temp and Vx come from other sensors
         double omega_meas = plant.step(tau, VX, DT_S, t_s);
 
         // --- STEP 2: Estimator ---
@@ -120,17 +118,21 @@ int main() {
                       << std::setw(10) << T_c << "\n";
         }
 
+        // ── All 13 TelemetryRow fields, each in its correct slot ──────────────
         logger.write({
-            t_s * 1000.0,
-            plant.trueOmega(),
-            omega_meas,
-            ekf.getOmega(),
-            plant.trueMu(),
-            ekf.getMu(),
-            ekf.getConfidenceScore(),
-            static_cast<double>(ekf.getMode()),
-            tau,
-            T_c
+            t_s * 1000.0,                              // t_ms
+            plant.trueOmega(),                         // true_omega
+            omega_meas,                                // meas_omega
+            ekf.getOmega(),                            // ekf_omega
+            plant.trueMu(),                            // true_mu
+            ekf.getMu(),                               // ekf_mu
+            ekf.getMuStdDev(),                         // ekf_mu_std  ← real σ_μ
+            ekf.getLastInnovation(),                   // innovation  ← real residual
+            ekf.getLastMahalanobis(),                  // mahalanobis ← real χ²
+            tau,                                       // tau         ← torque [N·m]
+            ekf.getConfidenceScore(),                  // confidence  [0..1]
+            static_cast<double>(ekf.getMode()),        // mode        [0/1/2]
+            T_c                                        // temp_c      [°C]
         });
 
         // Real-time pacing

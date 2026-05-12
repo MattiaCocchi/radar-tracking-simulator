@@ -26,6 +26,10 @@ struct TelemetryRow {
     double innovation;     ///< EKF innovation (residual)      [rad/s]
     double mahalanobis;    ///< Mahalanobis distance           [χ²]
     double tau;            ///< Applied torque                 [N·m]
+    // ── v2 additions ─────────────────────────────────────────────────────────
+    double confidence;     ///< EKF confidence score           [0..1]
+    double mode;           ///< EKF operating mode             [0=Normal,1=FreezeMu,2=Coasting]
+    double temp_c;         ///< Tyre temperature               [°C]
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -43,7 +47,8 @@ public:
                  "true_omega_rad_s,meas_omega_rad_s,ekf_omega_rad_s,"
                  "true_mu,ekf_mu,ekf_mu_std,"
                  "innovation_rad_s,mahalanobis,"
-                 "tau_Nm\n";
+                 "tau_Nm,"
+                 "confidence,mode,temp_c\n";
         file_.flush();
     }
 
@@ -62,7 +67,6 @@ public:
     // ── Flush buffered rows to disk ───────────────────────────────────────────
     // Call at end of simulation or from a low-priority thread.
     void flush() {
-        // Flush from the oldest unwritten entry
         const std::size_t start = (total_rows_ > BufferSize)
                                   ? write_idx_
                                   : 0;
@@ -79,10 +83,12 @@ public:
                   << r.ekf_mu_std   << ','
                   << r.innovation   << ','
                   << r.mahalanobis  << ','
-                  << r.tau          << '\n';
+                  << r.tau          << ','
+                  << r.confidence   << ','
+                  << r.mode         << ','
+                  << r.temp_c       << '\n';
         }
         file_.flush();
-        // Reset — rows already written
         write_idx_  = 0;
         total_rows_ = 0;
     }
@@ -90,8 +96,8 @@ public:
     ~TelemetryLogger() { flush(); }
 
 private:
-    std::ofstream                      file_;
+    std::ofstream                        file_;
     std::array<TelemetryRow, BufferSize> buffer_;
-    std::size_t                        write_idx_;
-    std::size_t                        total_rows_;
+    std::size_t                          write_idx_;
+    std::size_t                          total_rows_;
 };

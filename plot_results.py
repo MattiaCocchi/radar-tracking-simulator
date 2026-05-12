@@ -2,11 +2,10 @@
 plot_results_v2.py  —  Visualise the Tire-Road Friction Estimator v2.0 output
 Usage: python3 plot_results_v2.py [friction_v2_results.csv]
 
-CSV columns (v2.0 format from main.cpp logger.write()):
+CSV columns (13 total, written by TelemetryLogger in TelemetryRow order):
   t_ms, true_omega_rad_s, meas_omega_rad_s, ekf_omega_rad_s,
-  true_mu, ekf_mu, ekf_mu_std, confidence, mode, torque, temp_C
-
-  Note: 'mode' is 0=Normal, 1=FreezeMu, 2=Coasting
+  true_mu, ekf_mu, ekf_mu_std, innovation_rad_s, mahalanobis,
+  tau_Nm, confidence, mode, temp_c
 """
 import sys
 import numpy as np
@@ -20,32 +19,29 @@ from matplotlib.colors import Normalize
 # ── Config ─────────────────────────────────────────────────────────────────────
 CSV = sys.argv[1] if len(sys.argv) > 1 else "friction_v2_results.csv"
 
-# ── Load & validate CSV ────────────────────────────────────────────────────────
-EXPECTED_COLS = [
-    "t_ms", "true_omega_rad_s", "meas_omega_rad_s", "ekf_omega_rad_s",
-    "true_mu", "ekf_mu", "ekf_mu_std", "confidence", "mode", "torque", "temp_C"
-]
-
+# ── Load CSV ──────────────────────────────────────────────────────────────────
 df = pd.read_csv(CSV)
 
-# Remap legacy column names if needed (backward compat)
-REMAP = {
-    "tau_Nm": "torque", "tau": "torque",
-    "ekf_confidence": "confidence",
-    "ekf_mode": "mode",
-    "temperature_C": "temp_C",
-    "innovation_rad_s": "innovation",
-    "mahalanobis": "mahalanobis",
-}
-df.rename(columns=REMAP, inplace=True)
-
-# Fill optional columns with NaN if missing
+# ── Expected columns (must match TelemetryRow + CSV header exactly) ───────────
+EXPECTED_COLS = [
+    "t_ms", "true_omega_rad_s", "meas_omega_rad_s", "ekf_omega_rad_s",
+    "true_mu", "ekf_mu", "ekf_mu_std",
+    "innovation_rad_s", "mahalanobis",
+    "tau_Nm",
+    "confidence", "mode", "temp_c",
+]
 for col in EXPECTED_COLS:
     if col not in df.columns:
         df[col] = np.nan
 
+# Sanity clamp
+df["confidence"] = df["confidence"].clip(0.0, 1.0)
+df["mode"]       = df["mode"].round()
+
 print(f"Loaded {len(df)} rows from '{CSV}'")
 print(f"Time span: {df.t_ms.min():.0f} – {df.t_ms.max():.0f} ms")
+print(f"Confidence range: {df.confidence.min():.3f} – {df.confidence.max():.3f}")
+print(f"EKF μ range:      {df.ekf_mu.min():.3f} – {df.ekf_mu.max():.3f}")
 
 # ── Surface events (hardcoded to match main.cpp scenario) ─────────────────────
 events = [
@@ -73,14 +69,14 @@ plt.rcParams.update({
 })
 
 COLORS = {
-    "true":       "#E8EDF5",   # near-white
-    "ekf":        "#FF4D6D",   # vivid red
-    "meas":       "#4A90D9",   # steel blue
-    "confidence": "#FFD166",   # amber
-    "torque":     "#A78BFA",   # violet
-    "temp":       "#F97316",   # orange
-    "freeze_bg":  "#1A0A00",   # dark amber tint for freeze regions
-    "freeze_ln":  "#FF6B00",   # freeze indicator line
+    "true":       "#E8EDF5",
+    "ekf":        "#FF4D6D",
+    "meas":       "#4A90D9",
+    "confidence": "#FFD166",
+    "torque":     "#A78BFA",
+    "temp":       "#F97316",
+    "freeze_bg":  "#1A0A00",
+    "freeze_ln":  "#FF6B00",
 }
 
 # ── Figure layout ──────────────────────────────────────────────────────────────
@@ -97,28 +93,24 @@ gs = gridspec.GridSpec(
     left=0.07, right=0.97, top=0.94, bottom=0.07
 )
 
-ax_omega  = fig.add_subplot(gs[0, :])          # Full width: angular velocity
-ax_mu     = fig.add_subplot(gs[1, :])          # Full width: friction coefficient
-ax_conf   = fig.add_subplot(gs[2, 0])          # Confidence + mode
-ax_env    = fig.add_subplot(gs[2, 1])          # Torque & temperature
+ax_omega = fig.add_subplot(gs[0, :])
+ax_mu    = fig.add_subplot(gs[1, :])
+ax_conf  = fig.add_subplot(gs[2, 0])
+ax_env   = fig.add_subplot(gs[2, 1])
 
-axes_all = [ax_omega, ax_mu, ax_conf, ax_env]
 
 # ── Helper: shade FREEZE regions ──────────────────────────────────────────────
 def shade_freeze(ax, df, alpha=0.18):
-    """Draw amber background stripes where EKF mode == FreezeMu (1)."""
-    if "mode" not in df.columns or df["mode"].isna().all():
+    if df["mode"].isna().all():
         return
     freeze_mask = df["mode"] == 1.0
     if not freeze_mask.any():
         return
 
-    # Find contiguous freeze segments
     transitions = freeze_mask.astype(int).diff().fillna(0)
-    starts = df.loc[transitions == 1, "t_ms"].values
+    starts = df.loc[transitions == 1,  "t_ms"].values
     ends   = df.loc[transitions == -1, "t_ms"].values
 
-    # Handle case where freeze starts at beginning or ends at end
     if freeze_mask.iloc[0]:
         starts = np.concatenate([[df["t_ms"].iloc[0]], starts])
     if freeze_mask.iloc[-1]:
@@ -128,10 +120,7 @@ def shade_freeze(ax, df, alpha=0.18):
         ax.axvspan(s, e, color=COLORS["freeze_bg"], alpha=alpha, zorder=0)
         ax.axvline(s, color=COLORS["freeze_ln"], lw=0.8, alpha=0.6, ls="--", zorder=1)
 
-    # Add legend entry (only once per axis)
-    patch = mpatches.Patch(
-        color=COLORS["freeze_ln"], alpha=0.5, label="EKF FREEZE mode"
-    )
+    patch = mpatches.Patch(color=COLORS["freeze_ln"], alpha=0.5, label="EKF FREEZE mode")
     handles, labels = ax.get_legend_handles_labels()
     if "EKF FREEZE mode" not in labels:
         handles.append(patch)
@@ -160,11 +149,9 @@ ax.scatter(df.t_ms[::3], df.meas_omega_rad_s[::3],
 ax.plot(df.t_ms, df.ekf_omega_rad_s,
         color=COLORS["ekf"], lw=1.5, label="EKF ω̂", zorder=5)
 
-# Error ribbon
-omega_err = (df.true_omega_rad_s - df.ekf_omega_rad_s).abs()
 ax2_twin = ax.twinx()
-ax2_twin.fill_between(df.t_ms, omega_err, alpha=0.15,
-                       color=COLORS["ekf"], label="|error|")
+omega_err = (df.true_omega_rad_s - df.ekf_omega_rad_s).abs()
+ax2_twin.fill_between(df.t_ms, omega_err, alpha=0.15, color=COLORS["ekf"], label="|error|")
 ax2_twin.set_ylabel("|Δω| [rad/s]", color=COLORS["ekf"], fontsize=8)
 ax2_twin.tick_params(axis='y', colors=COLORS["ekf"], labelsize=7)
 ax2_twin.set_ylim(0, omega_err.quantile(0.99) * 4)
@@ -178,12 +165,13 @@ ax.grid(True)
 ax.set_xlim(df.t_ms.min(), df.t_ms.max())
 mark_events(ax, df)
 
+
 # ── Plot 2: Friction Coefficient μ ────────────────────────────────────────────
 ax = ax_mu
 ax.set_facecolor("#0F1117")
 
-# Confidence-shaded band around EKF estimate
-if not df.ekf_mu_std.isna().all():
+# ±1σ band — now uses the real ekf_mu_std column
+if not df["ekf_mu_std"].isna().all():
     ax.fill_between(
         df.t_ms,
         df.ekf_mu - df.ekf_mu_std,
@@ -197,12 +185,12 @@ ax.plot(df.t_ms, df.ekf_mu,
         color=COLORS["ekf"], lw=1.6, label="EKF μ̂ estimate", zorder=4)
 
 # Colour the EKF line by confidence score (gradient)
-if not df.confidence.isna().all():
-    points = np.array([df.t_ms, df.ekf_mu]).T.reshape(-1, 1, 2)
+if not df["confidence"].isna().all():
+    points   = np.array([df.t_ms, df.ekf_mu]).T.reshape(-1, 1, 2)
     segments = np.concatenate([points[:-1], points[1:]], axis=1)
     norm = Normalize(vmin=0, vmax=1)
     lc = LineCollection(segments, cmap="RdYlGn", norm=norm, linewidth=2.0, zorder=6)
-    lc.set_array(df.confidence.values)
+    lc.set_array(df["confidence"].values)
     ax.add_collection(lc)
     cbar = fig.colorbar(lc, ax=ax, pad=0.01, fraction=0.015)
     cbar.set_label("Confidence", fontsize=7, color="#C8D0E0")
@@ -217,19 +205,18 @@ ax.grid(True)
 ax.set_xlim(df.t_ms.min(), df.t_ms.max())
 mark_events(ax, df)
 
+
 # ── Plot 3: Confidence & Mode ──────────────────────────────────────────────────
 ax = ax_conf
 ax.set_facecolor("#0F1117")
 
-if not df.confidence.isna().all():
-    ax.plot(df.t_ms, df.confidence,
+if not df["confidence"].isna().all():
+    ax.plot(df.t_ms, df["confidence"],
             color=COLORS["confidence"], lw=1.4, label="Confidence [0,1]")
     ax.axhline(0.7, color="#27AE60", lw=0.8, ls="--", label="High threshold (0.7)")
-    ax.axhline(0.3, color=COLORS["ekf"], lw=0.8, ls="--", label="Low threshold (0.3)")
-    ax.fill_between(df.t_ms, 0.7, 1.0,
-                    alpha=0.07, color="#27AE60")
-    ax.fill_between(df.t_ms, 0.0, 0.3,
-                    alpha=0.07, color=COLORS["ekf"])
+    ax.axhline(0.3, color=COLORS["ekf"],  lw=0.8, ls="--", label="Low threshold (0.3)")
+    ax.fill_between(df.t_ms, 0.7, 1.0, alpha=0.07, color="#27AE60")
+    ax.fill_between(df.t_ms, 0.0, 0.3, alpha=0.07, color=COLORS["ekf"])
 
 shade_freeze(ax, df)
 ax.set_ylim(0, 1.1)
@@ -241,22 +228,22 @@ ax.grid(True)
 ax.set_xlim(df.t_ms.min(), df.t_ms.max())
 mark_events(ax, df)
 
+
 # ── Plot 4: Environment — Torque & Temperature ────────────────────────────────
 ax = ax_env
 ax.set_facecolor("#0F1117")
 
-if not df.torque.isna().all():
-    ax.fill_between(df.t_ms, df.torque, 0,
-                    alpha=0.4, color=COLORS["torque"])
-    ax.plot(df.t_ms, df.torque,
+if not df["tau_Nm"].isna().all():
+    ax.fill_between(df.t_ms, df["tau_Nm"], 0, alpha=0.4, color=COLORS["torque"])
+    ax.plot(df.t_ms, df["tau_Nm"],
             color=COLORS["torque"], lw=1.2, label="Torque τ [N·m]")
     ax.set_ylabel("Torque τ [N·m]", color=COLORS["torque"])
     ax.tick_params(axis='y', colors=COLORS["torque"])
 
 ax_temp = ax.twinx()
 ax_temp.set_facecolor("#0F1117")
-if not df.temp_C.isna().all():
-    ax_temp.plot(df.t_ms, df.temp_C,
+if not df["temp_c"].isna().all():
+    ax_temp.plot(df.t_ms, df["temp_c"],
                  color=COLORS["temp"], lw=1.4, ls="-.", label="Tyre Temp [°C]")
     ax_temp.set_ylabel("Temperature [°C]", color=COLORS["temp"])
     ax_temp.tick_params(axis='y', colors=COLORS["temp"])
@@ -270,6 +257,7 @@ ax.legend(lines1 + lines2, lab1 + lab2,
           loc="lower right", fontsize=7, framealpha=0.2, facecolor="#0F1117")
 ax.grid(True)
 ax.set_xlim(df.t_ms.min(), df.t_ms.max())
+
 
 # ── Surface legend strip ───────────────────────────────────────────────────────
 fig.text(0.50, 0.005,
